@@ -74,8 +74,8 @@ private:
   QString    m_connectionStatus;
   QString    m_lastPayload;
   QString    m_errorMessage;
-  QString    m_host         = QStringLiteral("test.mosquitto.org");
+  QString    m_host         = QStringLiteral("broker.hivemq.com");
   int        m_port         = 1883;
-  QString    m_topic        = QStringLiteral("qtmqtt/topic1");
+  QString    m_topic        = QStringLiteral("hivemq/demo");
   int        m_messageCount = 0;
 };

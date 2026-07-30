@@ -45,3 +45,6 @@ ui_*
 
 # Personal interview notes
 /docs/
+
+# Local agent configuration
+/.agents/

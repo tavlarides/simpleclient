@@ -8,10 +8,12 @@
 #include <QThread>
 #include <QtMqtt/QMqttClient>
 #include <QtMqtt/QMqttTopicFilter>
+#include <QtQml>
 #include <memory>
 #include <mutex>
 
 class AppController : public QObject {
+  QML_ELEMENT
   Q_OBJECT
 
   Q_PROPERTY(QString connectionStatus READ connectionStatus NOTIFY connectionStatusChanged)
@@ -72,8 +74,8 @@ private:
   QString    m_connectionStatus;
   QString    m_lastPayload;
   QString    m_errorMessage;
-  QString    m_host         = QStringLiteral("localhost");
+  QString    m_host         = QStringLiteral("test.mosquitto.org");
   int        m_port         = 1883;
-  QString    m_topic        = QStringLiteral("qtmqtt/demo");
+  QString    m_topic        = QStringLiteral("qtmqtt/topic1");
   int        m_messageCount = 0;
 };

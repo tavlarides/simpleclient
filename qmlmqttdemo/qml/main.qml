@@ -5,6 +5,9 @@ import QtQuick.Layouts
 ApplicationWindow {
   id: root
 
+  required property var appController
+  required property var messageModel
+
   property string statusColor: appController.connectionStatus === "Connected" ? "#2ecc71" : appController.connectionStatus === "Connecting" ? "#f39c12" : "#e74c3c"
 
   height: 680
@@ -27,9 +30,9 @@ ApplicationWindow {
       TextField {
         id: hostField
 
-        text: appController.host
+        text: root.appController.host
 
-        onEditingFinished: appController.host = text
+        onEditingFinished: root.appController.host = text
       }
 
       Label {
@@ -39,9 +42,9 @@ ApplicationWindow {
       SpinBox {
         from: 1
         to: 65535
-        value: appController.port
+        value: root.appController.port
 
-        onValueChanged: appController.port = value
+        onValueChanged: root.appController.port = value
       }
 
       Label {
@@ -51,21 +54,21 @@ ApplicationWindow {
       TextField {
         id: topicField
 
-        text: appController.topic
+        text: root.appController.topic
 
-        onEditingFinished: appController.topic = text
+        onEditingFinished: root.appController.topic = text
       }
 
       Button {
         text: "Connect"
 
-        onClicked: appController.connectToBroker()
+        onClicked: root.appController.connectToBroker()
       }
 
       Button {
         text: "Disconnect"
 
-        onClicked: appController.disconnectFromBroker()
+        onClicked: root.appController.disconnectFromBroker()
       }
     }
 
@@ -77,7 +80,7 @@ ApplicationWindow {
       }
 
       Rectangle {
-        color: statusColor
+        color: root.statusColor
         height: 16
         radius: 8
         width: 16
@@ -85,16 +88,16 @@ ApplicationWindow {
 
       Label {
         font.bold: true
-        text: appController.connectionStatus
+        text: root.appController.connectionStatus
       }
 
       Label {
-        text: "Messages: " + appController.messageCount
+        text: "Messages: " + root.appController.messageCount
       }
 
       Label {
         elide: Text.ElideRight
-        text: "Last payload: " + appController.lastPayload
+        text: "Last payload: " + root.appController.lastPayload
       }
     }
 
@@ -111,19 +114,19 @@ ApplicationWindow {
       Button {
         text: "Publish"
 
-        onClicked: appController.publishMessage(messageField.text)
+        onClicked: root.appController.publishMessage(messageField.text)
       }
 
       Button {
         text: "Subscribe"
 
-        onClicked: appController.subscribeToTopic(topicField.text)
+        onClicked: root.appController.subscribeToTopic(topicField.text)
       }
 
       Button {
         text: "Clear"
 
-        onClicked: appController.clearMessages()
+        onClicked: root.appController.clearMessages()
       }
     }
 
@@ -134,10 +137,16 @@ ApplicationWindow {
       ListView {
         anchors.fill: parent
         clip: true
-        model: messageModel
+        model: root.messageModel
         spacing: 8
 
         delegate: Rectangle {
+          id: messageDelegate
+          required property int index
+          required property string topic
+          required property string payload
+          required property string timestamp
+
           border.color: "#dcdcdc"
           color: index % 2 === 0 ? "#f7f7f7" : "#ffffff"
           height: 54
@@ -152,11 +161,11 @@ ApplicationWindow {
 
             Text {
               font.bold: true
-              text: "[" + timestamp + "] " + topic
+              text: "[" + messageDelegate.timestamp + "] " + messageDelegate.topic
             }
 
             Text {
-              text: payload
+                text: messageDelegate.payload
             }
           }
         }
@@ -165,7 +174,7 @@ ApplicationWindow {
 
     Label {
       color: "#b00020"
-      text: appController.errorMessage
+      text: root.appController.errorMessage
       wrapMode: Text.WordWrap
     }
   }

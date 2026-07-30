@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(qmlmqttdemo LANGUAGES CXX)
+project(qmlmqttdemo VERSION 1.0.0 LANGUAGES CXX)
 
 if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0" CACHE STRING "Minimum macOS version" FORCE)
@@ -33,6 +33,7 @@ qt_add_qml_module(qmlmqttdemo
     VERSION 1.0
     QML_FILES
         src/qml/App.qml
+        src/qml/HostInput.qml
     SOURCES
         src/appcontroller.h
         src/appcontroller.cpp
@@ -47,6 +48,13 @@ target_include_directories(qmlmqttdemo PRIVATE
 )
 
 set_source_files_properties(src/appcontroller.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
+set_target_properties(qmlmqttdemo PROPERTIES
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
 
 
 target_link_libraries(qmlmqttdemo PRIVATE

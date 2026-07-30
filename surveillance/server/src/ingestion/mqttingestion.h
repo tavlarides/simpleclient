@@ -1,14 +1,17 @@
 #pragma once
 
-#include <QMqttClient>
 #include <QObject>
+#include <QScopedPointer>
 #include <QString>
+
+class MqttIngestionPrivate;
 
 class MqttIngestion : public QObject {
     Q_OBJECT
 
 public:
     explicit MqttIngestion(QString host, quint16 port, QString topic, QObject *parent = nullptr);
+    ~MqttIngestion() override;
 
     void start();
 
@@ -17,6 +20,6 @@ signals:
     void statusChanged(const QString &status);
 
 private:
-    QMqttClient m_client;
-    QString m_topic;
+    Q_DECLARE_PRIVATE(MqttIngestion)
+    QScopedPointer<MqttIngestionPrivate> d_ptr;
 };

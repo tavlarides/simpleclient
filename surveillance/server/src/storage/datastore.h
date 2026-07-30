@@ -1,15 +1,19 @@
 #pragma once
 
 #include <QObject>
+#include <QScopedPointer>
 #include <QString>
 
 #include <surveillance/domain.h>
+
+class DataStorePrivate;
 
 class DataStore : public QObject {
     Q_OBJECT
 
 public:
     explicit DataStore(QString connectionName, QString databaseUrl);
+    ~DataStore() override;
 
 public slots:
     void initialize();
@@ -20,6 +24,6 @@ signals:
     void storageError(const QString &message);
 
 private:
-    QString m_connectionName;
-    QString m_databaseUrl;
+    Q_DECLARE_PRIVATE(DataStore)
+    QScopedPointer<DataStorePrivate> d_ptr;
 };

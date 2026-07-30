@@ -1,13 +1,9 @@
 #pragma once
 
 #include <QObject>
-#include <QThread>
+#include <QScopedPointer>
 
-#include "ingestion/mqttingestion.h"
-#include "presentation/natspublisher.h"
-
-class EventProcessor;
-class DataStore;
+class SecurityServerPrivate;
 
 class SecurityServer : public QObject {
     Q_OBJECT
@@ -19,10 +15,6 @@ public:
     void start();
 
 private:
-    MqttIngestion m_ingestion;
-    NatsPublisher m_natsPublisher;
-    QThread m_processingThread;
-    QThread m_storageThread;
-    EventProcessor *m_processor = nullptr;
-    DataStore *m_dataStore = nullptr;
+    Q_DECLARE_PRIVATE(SecurityServer)
+    QScopedPointer<SecurityServerPrivate> d_ptr;
 };

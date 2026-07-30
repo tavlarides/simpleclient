@@ -1,10 +1,13 @@
 #include "securityserver.h"
 
+#include "ingestion/mqttingestion.h"
+#include "presentation/natspublisher.h"
 #include "processing/eventprocessor.h"
 #include "storage/datastore.h"
 
 #include <QCoreApplication>
 #include <QLoggingCategory>
+#include <QThread>
 
 Q_LOGGING_CATEGORY(serverLog, "surveillance.server")
 
@@ -15,42 +18,62 @@ QString environment(const char *name, const QString &fallback) {
 }
 } // namespace
 
+class SecurityServerPrivate {
+    Q_DECLARE_PUBLIC(SecurityServer)
+
+public:
+    explicit SecurityServerPrivate(SecurityServer *q)
+        : q_ptr(q)
+        , ingestion(environment("MQTT_HOST", QStringLiteral("localhost")),
+                    environment("MQTT_PORT", QStringLiteral("1883")).toUShort(),
+                    environment("MQTT_TOPIC", QStringLiteral("cameras/+/events")))
+        , natsPublisher(environment("NATS_HOST", QStringLiteral("localhost")),
+                        environment("NATS_PORT", QStringLiteral("4222")).toUShort()) {}
+
+    SecurityServer *q_ptr;
+    MqttIngestion ingestion;
+    NatsPublisher natsPublisher;
+    QThread processingThread;
+    QThread storageThread;
+    EventProcessor *processor = nullptr;
+    DataStore *dataStore = nullptr;
+};
+
 SecurityServer::SecurityServer(QObject *parent)
     : QObject(parent)
-    , m_ingestion(environment("MQTT_HOST", QStringLiteral("localhost")),
-                  environment("MQTT_PORT", QStringLiteral("1883")).toUShort(),
-                  environment("MQTT_TOPIC", QStringLiteral("cameras/+/events")))
-    , m_natsPublisher(environment("NATS_HOST", QStringLiteral("localhost")),
-                      environment("NATS_PORT", QStringLiteral("4222")).toUShort()) {
-    m_processor = new EventProcessor;
-    m_processor->moveToThread(&m_processingThread);
-    m_dataStore = new DataStore(QStringLiteral("security-server-store"),
-                                environment("DATABASE_URL", QStringLiteral("postgresql://security:security@localhost:5432/security")));
-    m_dataStore->moveToThread(&m_storageThread);
+    , d_ptr(new SecurityServerPrivate(this)) {
+    Q_D(SecurityServer);
+    d->processor = new EventProcessor;
+    d->processor->moveToThread(&d->processingThread);
+    d->dataStore = new DataStore(QStringLiteral("security-server-store"),
+                                 environment("DATABASE_URL", QStringLiteral("postgresql://security:security@localhost:5432/security")));
+    d->dataStore->moveToThread(&d->storageThread);
 
-    connect(&m_processingThread, &QThread::finished, m_processor, &QObject::deleteLater);
-    connect(&m_storageThread, &QThread::finished, m_dataStore, &QObject::deleteLater);
-    connect(&m_ingestion, &MqttIngestion::rawEventReceived, m_processor, &EventProcessor::process, Qt::QueuedConnection);
-    connect(m_processor, &EventProcessor::incidentReady, m_dataStore, &DataStore::store, Qt::QueuedConnection);
-    connect(m_dataStore, &DataStore::incidentStored, &m_natsPublisher, &NatsPublisher::publishIncident, Qt::QueuedConnection);
-    connect(m_processor, &EventProcessor::rejected, this, [](const QString &reason) { qCWarning(serverLog) << "Rejected camera event:" << reason; });
-    connect(m_dataStore, &DataStore::storageError, this, [](const QString &message) { qCCritical(serverLog) << "Storage failure:" << message; });
-    connect(&m_ingestion, &MqttIngestion::statusChanged, this, [](const QString &status) { qCInfo(serverLog) << status; });
-    connect(&m_natsPublisher, &NatsPublisher::statusChanged, this, [](const QString &status) { qCInfo(serverLog) << status; });
+    connect(&d->processingThread, &QThread::finished, d->processor, &QObject::deleteLater);
+    connect(&d->storageThread, &QThread::finished, d->dataStore, &QObject::deleteLater);
+    connect(&d->ingestion, &MqttIngestion::rawEventReceived, d->processor, &EventProcessor::process, Qt::QueuedConnection);
+    connect(d->processor, &EventProcessor::incidentReady, d->dataStore, &DataStore::store, Qt::QueuedConnection);
+    connect(d->dataStore, &DataStore::incidentStored, &d->natsPublisher, &NatsPublisher::publishIncident, Qt::QueuedConnection);
+    connect(d->processor, &EventProcessor::rejected, this, [](const QString &reason) { qCWarning(serverLog) << "Rejected camera event:" << reason; });
+    connect(d->dataStore, &DataStore::storageError, this, [](const QString &message) { qCCritical(serverLog) << "Storage failure:" << message; });
+    connect(&d->ingestion, &MqttIngestion::statusChanged, this, [](const QString &status) { qCInfo(serverLog) << status; });
+    connect(&d->natsPublisher, &NatsPublisher::statusChanged, this, [](const QString &status) { qCInfo(serverLog) << status; });
 }
 
 SecurityServer::~SecurityServer() {
-    m_processingThread.quit();
-    m_storageThread.quit();
-    m_processingThread.wait();
-    m_storageThread.wait();
+    Q_D(SecurityServer);
+    d->processingThread.quit();
+    d->storageThread.quit();
+    d->processingThread.wait();
+    d->storageThread.wait();
 }
 
 void SecurityServer::start() {
+    Q_D(SecurityServer);
     qRegisterMetaType<surveillance::Incident>();
-    m_processingThread.start();
-    m_storageThread.start();
-    QMetaObject::invokeMethod(m_dataStore, &DataStore::initialize, Qt::QueuedConnection);
-    m_natsPublisher.start();
-    m_ingestion.start();
+    d->processingThread.start();
+    d->storageThread.start();
+    QMetaObject::invokeMethod(d->dataStore, &DataStore::initialize, Qt::QueuedConnection);
+    d->natsPublisher.start();
+    d->ingestion.start();
 }

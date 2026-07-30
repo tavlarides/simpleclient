@@ -1,5 +1,8 @@
 #include "operatorcontroller.h"
 
+#include "incidentsmodel.h"
+#include "natssubscriber.h"
+
 namespace {
 QString environment(const char *name, const QString &fallback) {
     const QString value = qEnvironmentVariable(name);
@@ -7,26 +10,46 @@ QString environment(const char *name, const QString &fallback) {
 }
 } // namespace
 
+class OperatorControllerPrivate {
+    Q_DECLARE_PUBLIC(OperatorController)
+
+public:
+    explicit OperatorControllerPrivate(OperatorController *q)
+        : q_ptr(q)
+        , incidents(q)
+        , subscriber(environment("NATS_HOST", QStringLiteral("localhost")),
+                     environment("NATS_PORT", QStringLiteral("4222")).toUShort(), q) {}
+
+    OperatorController *q_ptr;
+    IncidentsModel incidents;
+    NatsSubscriber subscriber;
+    QString connectionStatus = QStringLiteral("Starting");
+};
+
 OperatorController::OperatorController(QObject *parent)
     : QObject(parent)
-    , m_incidents(this)
-    , m_subscriber(environment("NATS_HOST", QStringLiteral("localhost")),
-                   environment("NATS_PORT", QStringLiteral("4222")).toUShort(), this) {
-    connect(&m_subscriber, &NatsSubscriber::incidentReceived, &m_incidents, &IncidentsModel::append);
-    connect(&m_subscriber, &NatsSubscriber::statusChanged, this, [this](const QString &status) {
-        if (m_connectionStatus == status) {
+    , d_ptr(new OperatorControllerPrivate(this)) {
+    Q_D(OperatorController);
+    connect(&d->subscriber, &NatsSubscriber::incidentReceived, &d->incidents, &IncidentsModel::append);
+    connect(&d->subscriber, &NatsSubscriber::statusChanged, this, [this](const QString &status) {
+        Q_D(OperatorController);
+        if (d->connectionStatus == status) {
             return;
         }
-        m_connectionStatus = status;
+        d->connectionStatus = status;
         emit connectionStatusChanged();
     });
-    m_subscriber.start();
+    d->subscriber.start();
 }
 
+OperatorController::~OperatorController() = default;
+
 QAbstractItemModel *OperatorController::incidentModel() {
-    return &m_incidents;
+    Q_D(OperatorController);
+    return &d->incidents;
 }
 
 QString OperatorController::connectionStatus() const {
-    return m_connectionStatus;
+    Q_D(const OperatorController);
+    return d->connectionStatus;
 }

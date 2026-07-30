@@ -1,15 +1,18 @@
 #pragma once
 
 #include <QObject>
-#include <QTcpSocket>
+#include <QScopedPointer>
 
 #include <surveillance/domain.h>
+
+class NatsPublisherPrivate;
 
 class NatsPublisher : public QObject {
     Q_OBJECT
 
 public:
     explicit NatsPublisher(QString host, quint16 port, QObject *parent = nullptr);
+    ~NatsPublisher() override;
 
     void start();
 
@@ -20,9 +23,6 @@ signals:
     void statusChanged(const QString &status);
 
 private:
-    QTcpSocket m_socket;
-    QString m_host;
-    quint16 m_port;
-    bool m_handshakeSent = false;
-    bool m_ready = false;
+    Q_DECLARE_PRIVATE(NatsPublisher)
+    QScopedPointer<NatsPublisherPrivate> d_ptr;
 };

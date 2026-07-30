@@ -5,18 +5,34 @@
 #include <QSqlQuery>
 #include <QUrl>
 
+class DataStorePrivate {
+    Q_DECLARE_PUBLIC(DataStore)
+
+public:
+    DataStorePrivate(DataStore *q, QString name, QString url)
+        : q_ptr(q)
+        , connectionName(std::move(name))
+        , databaseUrl(std::move(url)) {}
+
+    DataStore *q_ptr;
+    QString connectionName;
+    QString databaseUrl;
+};
+
 DataStore::DataStore(QString connectionName, QString databaseUrl)
-    : m_connectionName(std::move(connectionName))
-    , m_databaseUrl(std::move(databaseUrl)) {}
+    : d_ptr(new DataStorePrivate(this, std::move(connectionName), std::move(databaseUrl))) {}
+
+DataStore::~DataStore() = default;
 
 void DataStore::initialize() {
-    const QUrl url(m_databaseUrl);
+    Q_D(DataStore);
+    const QUrl url(d->databaseUrl);
     if (!url.isValid() || url.scheme() != QStringLiteral("postgresql")) {
         emit storageError(QStringLiteral("DATABASE_URL must use postgresql://user:password@host:port/database"));
         return;
     }
 
-    QSqlDatabase database = QSqlDatabase::addDatabase(QStringLiteral("QPSQL"), m_connectionName);
+    QSqlDatabase database = QSqlDatabase::addDatabase(QStringLiteral("QPSQL"), d->connectionName);
     database.setHostName(url.host());
     database.setPort(url.port(5432));
     database.setDatabaseName(url.path().mid(1));
@@ -38,7 +54,8 @@ void DataStore::initialize() {
 }
 
 void DataStore::store(const surveillance::Incident &incident) {
-    const QSqlDatabase database = QSqlDatabase::database(m_connectionName);
+    Q_D(DataStore);
+    const QSqlDatabase database = QSqlDatabase::database(d->connectionName);
     if (!database.isOpen()) {
         emit storageError(QStringLiteral("PostgreSQL connection is not open"));
         return;

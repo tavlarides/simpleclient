@@ -1,8 +1,11 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QScopedPointer>
 
 #include <surveillance/domain.h>
+
+class IncidentsModelPrivate;
 
 class IncidentsModel : public QAbstractListModel {
     Q_OBJECT
@@ -22,6 +25,7 @@ public:
     Q_ENUM(Role)
 
     explicit IncidentsModel(QObject *parent = nullptr);
+    ~IncidentsModel() override;
 
     int rowCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -30,5 +34,6 @@ public:
     void append(const surveillance::Incident &incident);
 
 private:
-    QList<surveillance::Incident> m_incidents;
+    Q_DECLARE_PRIVATE(IncidentsModel)
+    QScopedPointer<IncidentsModelPrivate> d_ptr;
 };

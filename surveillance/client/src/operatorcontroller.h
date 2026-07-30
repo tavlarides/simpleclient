@@ -1,10 +1,11 @@
 #pragma once
 
+#include <QAbstractItemModel>
 #include <QObject>
 #include <QQmlEngine>
+#include <QScopedPointer>
 
-#include "incidentsmodel.h"
-#include "natssubscriber.h"
+class OperatorControllerPrivate;
 
 class OperatorController : public QObject {
     Q_OBJECT
@@ -14,6 +15,7 @@ class OperatorController : public QObject {
 
 public:
     explicit OperatorController(QObject *parent = nullptr);
+    ~OperatorController() override;
 
     QAbstractItemModel *incidentModel();
     QString connectionStatus() const;
@@ -22,7 +24,6 @@ signals:
     void connectionStatusChanged();
 
 private:
-    IncidentsModel m_incidents;
-    NatsSubscriber m_subscriber;
-    QString m_connectionStatus = QStringLiteral("Starting");
+    Q_DECLARE_PRIVATE(OperatorController)
+    QScopedPointer<OperatorControllerPrivate> d_ptr;
 };

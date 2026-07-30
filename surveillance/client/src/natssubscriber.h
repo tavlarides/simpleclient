@@ -1,15 +1,18 @@
 #pragma once
 
 #include <QObject>
-#include <QTcpSocket>
+#include <QScopedPointer>
 
 #include <surveillance/domain.h>
+
+class NatsSubscriberPrivate;
 
 class NatsSubscriber : public QObject {
     Q_OBJECT
 
 public:
     explicit NatsSubscriber(QString host, quint16 port, QObject *parent = nullptr);
+    ~NatsSubscriber() override;
 
     void start();
 
@@ -20,10 +23,6 @@ signals:
 private:
     void consumeBuffer();
 
-    QTcpSocket m_socket;
-    QByteArray m_buffer;
-    QString m_host;
-    quint16 m_port;
-    qsizetype m_expectedPayloadSize = -1;
-    bool m_handshakeSent = false;
+    Q_DECLARE_PRIVATE(NatsSubscriber)
+    QScopedPointer<NatsSubscriberPrivate> d_ptr;
 };

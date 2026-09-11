@@ -10,12 +10,8 @@ ApplicationWindow {
     height: 720
     title: qsTr("Security Operations Monitor")
 
-    OperatorController {
-        id: controller
-    }
-
     Dashboard {
         anchors.fill: parent
-        controller: controller
+        controller: OperatorController { }
     }
 }

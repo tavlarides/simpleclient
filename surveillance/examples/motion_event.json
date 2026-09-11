@@ -1,0 +1,9 @@
+{
+  "eventId": "c5afec5c-0ba7-4a81-982b-7e75b2b4e7d9",
+  "cameraId": "cam-athens-01",
+  "eventType": "motion",
+  "occurredAt": "2026-07-30T20:00:00Z",
+  "latitude": 37.975,
+  "longitude": 23.733,
+  "confidence": 0.98
+}

@@ -1,0 +1,51 @@
+# Build artifacts
+/build/
+/out/
+**/build/
+**/out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.app
+*.log
+
+# Qt / QML generated files
+*.pro.user
+*.pro.user.*
+*.autosave
+*.qmlc
+.qmlls.ini
+*.jsc
+*.rcc
+*.moc
+moc_*
+qrc_*
+ui_*
+*.qmake.stash
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Personal interview notes
+/docs/
+
+# Local agent configuration
+/.agents/
+skills-lock.json
